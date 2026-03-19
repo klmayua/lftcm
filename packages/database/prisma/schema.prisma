@@ -1,0 +1,1743 @@
+// LFTCM ChurchOS Database Schema
+// Living Faith Tabernacle - Complete Church ERP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE MODULE
+// ============================================
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  type        OrgType  @default(CHURCH)
+  subdomain   String?  @unique // yaounde, ebolowa, etc.
+  isMainBranch Boolean @default(false)
+
+  // Contact
+  address     String?
+  city        String?
+  country     String   @default("Cameroon")
+  phone       String?
+  email       String?
+
+  // Settings
+  settings    Json     @default("{}")
+  features    String[] // Enabled modules
+
+  // Relations
+  branches    Organization[] @relation("BranchHierarchy")
+  parentId    String?
+  parent      Organization?  @relation("BranchHierarchy", fields: [parentId], references: [id])
+
+  users       User[]
+  modules     Module[]
+  auditLogs   AuditLog[]
+
+  // Soft delete
+  deletedAt   DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([subdomain])
+  @@index([isMainBranch])
+  @@index([deletedAt])
+}
+
+model Module {
+  id            String   @id @default(uuid())
+  name          String   // people, worship, give, accounting, hr, etc.
+  version       String   @default("1.0.0")
+  isActive      Boolean  @default(false)
+  isInstalled   Boolean  @default(false)
+  config        Json     @default("{}")
+
+  organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId         String
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([orgId, name])
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String?   @unique
+  passwordHash  String
+
+  // Profile
+  firstName     String
+  lastName      String
+  avatar        String?
+  dateOfBirth   DateTime?
+  gender        Gender?
+
+  // Church-specific
+  isMember      Boolean   @default(false)
+  memberSince   DateTime?
+  baptizedAt    DateTime?
+  baptizedBy    String?
+
+  // Status
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  emailVerified DateTime?
+  phoneVerified DateTime?
+
+  // Relations
+  organization  Organization @relation(fields: [orgId], references: [id])
+  orgId         String
+
+  roles         UserRole[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+
+  // Module relations
+  member        Member?
+  employee      Employee?
+  donations     Donation[]
+  prayers       PrayerRequest[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([email])
+  @@index([orgId, deletedAt])
+  @@index([isActive, deletedAt])
+}
+
+model UserRole {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  role        Role     @default(MEMBER)
+  permissions Json     @default("[]")
+
+  assignedBy  String?
+  assignedAt  DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@unique([userId, role])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+
+  token        String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+
+  createdAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      String?
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  orgId       String
+
+  action      String   // LOGIN, CREATE, UPDATE, DELETE, EXPORT
+  module      String
+  resource    String
+  resourceId  String?
+  details     Json     // Before/after state
+
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ============================================
+// PEOPLE MODULE
+// ============================================
+
+model Member {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String   @unique
+
+  // Member ID for ID card generation
+  memberNumber  String   @unique // LFT-YYYY-XXXX format
+
+  // Family
+  family        Family?  @relation(fields: [familyId], references: [id])
+  familyId      String?
+  familyRole    FamilyRole?
+
+  // Spiritual
+  salvationDate     DateTime?
+  waterBaptismDate  DateTime?
+  holySpiritDate    DateTime?
+  membershipClass   Boolean   @default(false)
+  membershipDate    DateTime?
+
+  // Ministry
+  departments     DepartmentMember[]
+  smallGroups     SmallGroupMember[]
+  volunteerTeams  VolunteerTeamMember[]
+  spiritualGifts  String[]
+
+  // Communication
+  preferredContact  ContactMethod @default(EMAIL)
+  language          String   @default("en")
+
+  // Status
+  status          MemberStatus @default(ACTIVE)
+  isVisitor       Boolean   @default(false)
+  visitorDate     DateTime?
+
+  // Attendance
+  attendanceRecords Attendance[]
+
+  // ID Card
+  idCardGenerated   Boolean   @default(false)
+  idCardPrinted     Boolean   @default(false)
+  idCardPrintedAt   DateTime?
+
+  // Soft delete
+  deletedAt       DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([memberNumber])
+  @@index([status])
+  @@index([userId, deletedAt])
+  @@index([status, deletedAt])
+  @@index([familyId, deletedAt])
+  @@index([isVisitor, deletedAt])
+}
+
+model Family {
+  id            String   @id @default(uuid())
+  familyName    String
+  address       String?
+  city          String?
+
+  members       Member[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([deletedAt])
+}
+
+model Department {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+
+  members       DepartmentMember[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([deletedAt])
+}
+
+model DepartmentMember {
+  id            String   @id @default(uuid())
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId      String
+
+  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId  String
+
+  role          String   // Leader, Assistant, Member
+  joinedAt      DateTime @default(now())
+
+  @@unique([memberId, departmentId])
+}
+
+model SmallGroup {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  meetingDay    String?
+  meetingTime   String?
+  location      String?
+
+  leader        Member?  @relation(fields: [leaderId], references: [id])
+  leaderId      String?
+
+  members       SmallGroupMember[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([leaderId, deletedAt])
+  @@index([deletedAt])
+}
+
+model SmallGroupMember {
+  id            String   @id @default(uuid())
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId      String
+
+  group         SmallGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId       String
+
+  joinedAt      DateTime @default(now())
+
+  @@unique([memberId, groupId])
+}
+
+model VolunteerTeam {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+
+  members       VolunteerTeamMember[]
+  schedules     VolunteerSchedule[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([deletedAt])
+}
+
+model VolunteerTeamMember {
+  id            String   @id @default(uuid())
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId      String
+
+  team          VolunteerTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId        String
+
+  role          String?
+  joinedAt      DateTime @default(now())
+
+  @@unique([memberId, teamId])
+}
+
+model Attendance {
+  id            String   @id @default(uuid())
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId      String
+
+  eventType     String   // SERVICE, EVENT, SMALL_GROUP
+  eventId       String?
+  eventDate     DateTime
+
+  checkInMethod String   // MANUAL, QR_CODE, RFID
+  checkedInAt   DateTime @default(now())
+  checkedInBy   String?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([memberId, eventDate])
+  @@index([eventType, eventDate, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// WORSHIP MODULE
+// ============================================
+
+model Service {
+  id            String   @id @default(uuid())
+  title         String
+  date          DateTime
+  serviceType   ServiceType
+
+  // Order of service
+  items         ServiceItem[]
+
+  // Teams
+  teams         ServiceTeam[]
+
+  // Resources
+  room          String?
+  equipment     String[]
+
+  // Media
+  sermon        Sermon?  @relation(fields: [sermonId], references: [id])
+  sermonId      String?  @unique
+
+  // Attendance
+  attendance    Int      @default(0)
+
+  notes         String?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([date, deletedAt])
+  @@index([serviceType, deletedAt])
+  @@index([deletedAt])
+}
+
+model ServiceItem {
+  id            String   @id @default(uuid())
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId     String
+
+  order         Int
+  type          ServiceItemType
+  title         String
+  description   String?
+  duration      Int      // minutes
+
+  // For songs
+  song          Song?    @relation(fields: [songId], references: [id])
+  songId        String?
+
+  // For sermons
+  speaker       String?
+  scripture     String?
+
+  notes         String?
+}
+
+model Song {
+  id            String   @id @default(uuid())
+  title         String
+  artist        String?
+  lyrics        String?  @db.Text
+  chords        String?  @db.Text
+  ccliNumber    String?
+
+  themes        String[]
+  tempo         String?
+  key           String?
+
+  serviceItems  ServiceItem[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([deletedAt])
+}
+
+model ServiceTeam {
+  id            String   @id @default(uuid())
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId     String
+
+  teamType      TeamType
+  members       ServiceTeamMember[]
+}
+
+model ServiceTeamMember {
+  id            String   @id @default(uuid())
+  serviceTeam   ServiceTeam @relation(fields: [serviceTeamId], references: [id], onDelete: Cascade)
+  serviceTeamId String
+
+  memberId      String
+  role          String?
+  confirmed     Boolean  @default(false)
+}
+
+// ============================================
+// WORD MODULE (Sermons)
+// ============================================
+
+model Sermon {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String   @unique
+  description   String?  @db.Text
+
+  series        SermonSeries? @relation(fields: [seriesId], references: [id])
+  seriesId      String?
+  seriesOrder   Int?
+
+  // Content
+  audioUrl      String?
+  videoUrl      String?
+  transcript    String?  @db.Text
+  duration      Int?     // seconds
+
+  // Metadata
+  scripture     String[]
+  topics        String[]
+  speaker       String
+  preachedAt    DateTime
+
+  // Media
+  thumbnailUrl  String?
+  attachments   SermonAttachment[]
+
+  // Stats
+  viewCount     Int      @default(0)
+  downloadCount Int      @default(0)
+
+  // Relations
+  service       Service?
+
+  isPublished   Boolean  @default(false)
+  publishedAt   DateTime?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([slug])
+  @@index([preachedAt])
+  @@index([isPublished, preachedAt, deletedAt])
+  @@index([deletedAt])
+}
+
+model SermonSeries {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String   @unique
+  description   String?  @db.Text
+  thumbnailUrl  String?
+
+  sermons       Sermon[]
+
+  startDate     DateTime?
+  endDate       DateTime?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([deletedAt])
+}
+
+model SermonAttachment {
+  id            String   @id @default(uuid())
+  sermon        Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
+  sermonId      String
+
+  name          String
+  url           String
+  type          String   // PDF, DOC, etc.
+  size          Int      // bytes
+}
+
+// ============================================
+// GIVE MODULE
+// ============================================
+
+model Donation {
+  id            String   @id @default(uuid())
+
+  // Donor
+  user          User?    @relation(fields: [userId], references: [id])
+  userId        String?
+
+  // For anonymous or non-member donors
+  donorName     String?
+  donorEmail    String?
+  donorPhone    String?
+
+  // Amount
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("XAF")
+
+  // Type
+  donationType  DonationType @default(OFFERING)
+  project       Project? @relation(fields: [projectId], references: [id])
+  projectId     String?
+
+  // Payment
+  paymentMethod String   // MTN_MOBILE_MONEY, ORANGE_MONEY, CASH, BANK
+  paymentStatus PaymentStatus @default(PENDING)
+  transactionId String?  // From payment provider
+
+  // Receipt
+  receiptNumber String?  @unique
+  receiptSent   Boolean  @default(false)
+
+  // Accounting
+  accountId     String?  // Link to GL account
+
+  // Meta
+  isRecurring   Boolean  @default(false)
+  recurringId   String?  // If part of recurring plan
+
+  notes         String?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  donatedAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([paymentStatus, deletedAt])
+  @@index([donationType, deletedAt])
+  @@index([deletedAt])
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?  @db.Text
+
+  // Financial
+  goal          Decimal? @db.Decimal(12, 2)
+  raised        Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Media
+  imageUrl      String?
+
+  // Status
+  isActive      Boolean  @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+
+  // Relations
+  donations     Donation[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// EVENTS MODULE
+// ============================================
+
+model Event {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?  @db.Text
+
+  type          EventType
+  category      String?
+
+  // Schedule
+  startDate     DateTime
+  endDate       DateTime?
+  timezone      String   @default("Africa/Douala")
+
+  // Location
+  isVirtual     Boolean  @default(false)
+  location      String?
+  address       String?
+  virtualLink   String?
+
+  // Capacity
+  maxAttendees  Int?
+
+  // Registration
+  requiresRegistration Boolean @default(true)
+  registrationFee      Decimal? @db.Decimal(10, 2)
+  currency             String   @default("XAF")
+
+  // Relations
+  registrations EventRegistration[]
+
+  // Status
+  status        EventStatus @default(DRAFT)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([status])
+  @@index([status, startDate, deletedAt])
+  @@index([deletedAt])
+}
+
+model EventRegistration {
+  id            String   @id @default(uuid())
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+
+  // Attendee
+  name          String
+  email         String
+  phone         String?
+
+  // If registered user
+  userId        String?
+
+  // Payment
+  amountPaid    Decimal? @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Status
+  status        RegistrationStatus @default(CONFIRMED)
+  attended      Boolean  @default(false)
+  checkedInAt   DateTime?
+
+  // Meta
+  dietaryRequirements String?
+  specialNeeds  String?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@unique([eventId, email])
+  @@index([eventId, status, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// PRAYER MODULE
+// ============================================
+
+model PrayerRequest {
+  id            String   @id @default(uuid())
+
+  // Requester
+  user          User?    @relation(fields: [userId], references: [id])
+  userId        String?
+
+  // For anonymous
+  requesterName String?
+  requesterEmail String?
+
+  // Content
+  title         String
+  content       String   @db.Text
+  category      PrayerCategory @default(GENERAL)
+
+  // Privacy
+  isAnonymous   Boolean  @default(false)
+  isPublic      Boolean  @default(false) // For prayer wall
+
+  // Status
+  status        PrayerStatus @default(PENDING)
+  assignedTo    String?  // Prayer team member
+
+  // Responses
+  responses     PrayerResponse[]
+
+  // Meta
+  isUrgent      Boolean  @default(false)
+  answeredAt    DateTime?
+  testimony     String?  @db.Text
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([isPublic, status, deletedAt])
+  @@index([userId, deletedAt])
+  @@index([deletedAt])
+}
+
+model PrayerResponse {
+  id            String   @id @default(uuid())
+  request       PrayerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId     String
+
+  responderId   String
+  response      String   @db.Text
+  prayedAt      DateTime @default(now())
+}
+
+// ============================================
+// HR MODULE
+// ============================================
+
+model Employee {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String   @unique
+
+  // Employee ID
+  employeeNumber String  @unique // LFT-EMP-XXXX
+
+  // Employment
+  department    String
+  position      String
+  employmentType EmploymentType @default(FULL_TIME)
+
+  startDate     DateTime
+  endDate       DateTime?
+
+  // Compensation (Cameroon standards)
+  baseSalary    Decimal  @db.Decimal(10, 2) // Monthly in XAF
+  currency      String   @default("XAF")
+
+  // Benefits
+  hasHealthInsurance Boolean @default(false)
+  hasPension         Boolean @default(false)
+
+  // CNPS (Cameroon social security)
+  cnpsNumber    String?
+
+  // Leave
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+
+  // Payroll
+  payrollRecords PayrollRecord[]
+
+  // Documents
+  documents     EmployeeDocument[]
+
+  // Status
+  status        EmployeeStatus @default(ACTIVE)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model LeaveBalance {
+  id            String   @id @default(uuid())
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId    String
+
+  year          Int
+  type          LeaveType
+  entitledDays  Int
+  usedDays      Int      @default(0)
+
+  @@unique([employeeId, year, type])
+}
+
+model LeaveRequest {
+  id            String   @id @default(uuid())
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId    String
+
+  type          LeaveType
+  startDate     DateTime
+  endDate       DateTime
+  days          Int
+
+  reason        String?
+
+  status        LeaveRequestStatus @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([status, deletedAt])
+  @@index([employeeId, deletedAt])
+  @@index([deletedAt])
+}
+
+model PayrollRecord {
+  id            String   @id @default(uuid())
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId    String
+
+  // Period
+  year          Int
+  month         Int
+
+  // Earnings
+  baseSalary    Decimal  @db.Decimal(10, 2)
+  allowances    Decimal  @default(0) @db.Decimal(10, 2)
+  bonuses       Decimal  @default(0) @db.Decimal(10, 2)
+  grossSalary   Decimal  @db.Decimal(10, 2)
+
+  // Deductions (Cameroon)
+  cnpsEmployee  Decimal  @default(0) @db.Decimal(10, 2) // 4%
+  cnpsEmployer  Decimal  @default(0) @db.Decimal(10, 2) // 4%
+  crtv          Decimal  @default(0) @db.Decimal(10, 2) // Contribution CRTV
+  tax           Decimal  @default(0) @db.Decimal(10, 2) // IRPP
+  otherDeductions Decimal @default(0) @db.Decimal(10, 2)
+  totalDeductions Decimal @db.Decimal(10, 2)
+
+  // Net
+  netSalary     Decimal  @db.Decimal(10, 2)
+
+  // Status
+  status        PayrollStatus @default(DRAFT)
+  paidAt        DateTime?
+
+  // Payslip
+  payslipSent   Boolean  @default(false)
+  payslipSentAt DateTime?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@unique([employeeId, year, month])
+  @@index([status, deletedAt])
+  @@index([employeeId, deletedAt])
+  @@index([deletedAt])
+}
+
+model EmployeeDocument {
+  id            String   @id @default(uuid())
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId    String
+
+  name          String
+  type          String   // CONTRACT, ID, CERTIFICATE, etc.
+  url           String
+
+  createdAt     DateTime @default(now())
+}
+
+// ============================================
+// ACCOUNTING MODULE (OHADA Compliant)
+// ============================================
+
+model Account {
+  id            String   @id @default(uuid())
+  code          String   // OHADA account code (e.g., 5211)
+  name          String   // Account name
+  nameFr        String?  // French name
+
+  // OHADA Classification
+  class         Int      // 1-9
+  type          AccountType
+  category      String   // More specific category
+
+  // Balance
+  debitBalance  Decimal  @default(0) @db.Decimal(12, 2)
+  creditBalance Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Relations
+  parent        Account? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  parentId      String?
+  children      Account[] @relation("AccountHierarchy")
+
+  journalEntries JournalEntry[]
+
+  isActive      Boolean  @default(true)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@unique([code])
+  @@index([class, deletedAt])
+  @@index([type, deletedAt])
+  @@index([isActive, deletedAt])
+  @@index([deletedAt])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+
+  // Reference
+  reference     String   // Transaction reference number
+  date          DateTime
+  description   String
+
+  // Source
+  source        TransactionSource
+  sourceId      String?  // Link to originating record
+  sourceType    String?  // Model name
+
+  // Amount (must balance)
+  totalAmount   Decimal  @db.Decimal(12, 2)
+
+  // Entries
+  entries       JournalEntry[]
+
+  // Status
+  isPosted      Boolean  @default(false)
+  postedAt      DateTime?
+  postedBy      String?
+
+  // Branch
+  branchId      String?
+
+  // Attachments
+  attachments   TransactionAttachment[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  createdBy     String
+
+  @@index([date])
+  @@index([source, sourceId])
+  @@index([isPosted, deletedAt])
+  @@index([deletedAt])
+}
+
+model JournalEntry {
+  id            String   @id @default(uuid())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+
+  account       Account  @relation(fields: [accountId], references: [id])
+  accountId     String
+
+  // Amounts
+  debit         Decimal  @db.Decimal(12, 2)
+  credit        Decimal  @db.Decimal(12, 2)
+
+  // Must satisfy: debit = credit for each transaction
+
+  description   String?
+}
+
+model TransactionAttachment {
+  id            String   @id @default(uuid())
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+
+  name          String
+  url           String
+  type          String
+}
+
+model Budget {
+  id            String   @id @default(uuid())
+
+  year          Int
+  account       Account  @relation(fields: [accountId], references: [id])
+  accountId     String
+
+  // Budget amounts by period
+  annualBudget  Decimal  @db.Decimal(12, 2)
+
+  // Monthly breakdown
+  january       Decimal  @default(0) @db.Decimal(12, 2)
+  february      Decimal  @default(0) @db.Decimal(12, 2)
+  march         Decimal  @default(0) @db.Decimal(12, 2)
+  april         Decimal  @default(0) @db.Decimal(12, 2)
+  may           Decimal  @default(0) @db.Decimal(12, 2)
+  june          Decimal  @default(0) @db.Decimal(12, 2)
+  july          Decimal  @default(0) @db.Decimal(12, 2)
+  august        Decimal  @default(0) @db.Decimal(12, 2)
+  september     Decimal  @default(0) @db.Decimal(12, 2)
+  october       Decimal  @default(0) @db.Decimal(12, 2)
+  november      Decimal  @default(0) @db.Decimal(12, 2)
+  december      Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Actuals (updated from transactions)
+  actualYTD     Decimal  @default(0) @db.Decimal(12, 2)
+
+  @@unique([year, accountId])
+}
+
+// ============================================
+// INVENTORY MODULE
+// ============================================
+
+model InventoryItem {
+  id            String   @id @default(uuid())
+  sku           String   @unique
+  name          String
+  description   String?
+
+  category      String   // Office, Communion, Sound, etc.
+
+  unitOfMeasure String   // Each, Box, Liter, etc.
+
+  // Stock
+  reorderPoint  Int      @default(0)
+  reorderQty    Int      @default(0)
+
+  // Pricing
+  unitCost      Decimal? @db.Decimal(10, 2)
+
+  isActive      Boolean  @default(true)
+
+  // Relations
+  stockLevels   StockLevel[]
+  movements     InventoryMovement[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category, deletedAt])
+  @@index([isActive, deletedAt])
+  @@index([deletedAt])
+}
+
+model StockLevel {
+  id            String   @id @default(uuid())
+  item          InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId        String
+
+  location      String   // Main Store, Sound Room, etc.
+
+  quantity      Int      @default(0)
+  reservedQty   Int      @default(0) // Committed
+
+  @@unique([itemId, location])
+}
+
+model InventoryMovement {
+  id            String   @id @default(uuid())
+  item          InventoryItem @relation(fields: [itemId], references: [id])
+  itemId        String
+
+  type          MovementType
+  quantity      Int
+
+  fromLocation  String?
+  toLocation    String?
+
+  reference     String?  // PO number, Work order, etc.
+  referenceType String?
+
+  notes         String?
+
+  performedBy   String
+  performedAt   DateTime @default(now())
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([itemId, deletedAt])
+  @@index([type, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// FACILITIES MODULE
+// ============================================
+
+model Room {
+  id            String   @id @default(uuid())
+  name          String
+  building      String?
+
+  capacity      Int?
+  features      String[] // Projector, Sound, etc.
+
+  // Bookings
+  bookings      RoomBooking[]
+
+  // Maintenance
+  maintenanceRecords MaintenanceRecord[]
+
+  isActive      Boolean  @default(true)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([isActive, deletedAt])
+  @@index([deletedAt])
+}
+
+model RoomBooking {
+  id            String   @id @default(uuid())
+  room          Room     @relation(fields: [roomId], references: [id])
+  roomId        String
+
+  event         String
+  organizer     String
+  organizerId   String?
+
+  startTime     DateTime
+  endTime       DateTime
+
+  attendees     Int?
+  setupRequired String?
+
+  isExternal    Boolean  @default(false)
+  fee           Decimal? @db.Decimal(10, 2)
+
+  status        BookingStatus @default(CONFIRMED)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([roomId, status, deletedAt])
+  @@index([startTime, endTime, deletedAt])
+  @@index([deletedAt])
+}
+
+model Asset {
+  id            String   @id @default(uuid())
+  name          String
+  assetTag      String   @unique // Barcode/ID
+
+  category      AssetCategory
+
+  // Location
+  room          Room?    @relation(fields: [roomId], references: [id])
+  roomId        String?
+
+  // Purchase
+  purchaseDate  DateTime?
+  purchasePrice Decimal? @db.Decimal(10, 2)
+
+  // Depreciation
+  usefulLife    Int?     // Years
+  salvageValue  Decimal? @db.Decimal(10, 2)
+
+  // Status
+  status        AssetStatus @default(ACTIVE)
+
+  // Maintenance
+  maintenanceRecords MaintenanceRecord[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([status, deletedAt])
+  @@index([category, deletedAt])
+  @@index([deletedAt])
+}
+
+model MaintenanceRecord {
+  id            String   @id @default(uuid())
+
+  asset         Asset?   @relation(fields: [assetId], references: [id])
+  assetId       String?
+
+  room          Room?    @relation(fields: [roomId], references: [id])
+  roomId        String?
+
+  type          MaintenanceType
+  description   String
+
+  requestedBy   String
+  assignedTo    String?
+
+  scheduledAt   DateTime?
+  completedAt   DateTime?
+
+  cost          Decimal? @db.Decimal(10, 2)
+
+  status        MaintenanceStatus
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([status, deletedAt])
+  @@index([assetId, deletedAt])
+  @@index([roomId, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// SCHOOL MODULE (Living Bilingual School)
+// ============================================
+
+model School {
+  id            String   @id @default(uuid())
+  name          String   @default("Living Bilingual Nursery and Primary School")
+
+  // Levels
+  levels        SchoolLevel[]
+
+  // Academic Year
+  academicYears AcademicYear[]
+
+  // Current
+  currentYearId String?
+}
+
+model SchoolLevel {
+  id            String   @id @default(uuid())
+  school        School   @relation(fields: [schoolId], references: [id])
+  schoolId      String
+
+  name          String   // Nursery, Primary
+  grades        Grade[]
+}
+
+model Grade {
+  id            String   @id @default(uuid())
+  level         SchoolLevel @relation(fields: [levelId], references: [id])
+  levelId       String
+
+  name          String   // Class 1, Class 2, etc.
+  sections      Section[]
+}
+
+model Section {
+  id            String   @id @default(uuid())
+  grade         Grade    @relation(fields: [gradeId], references: [id])
+  gradeId       String
+
+  name          String   // A, B, etc.
+
+  // Students
+  students      Student[]
+
+  // Teacher
+  classTeacher  String?
+}
+
+model AcademicYear {
+  id            String   @id @default(uuid())
+  school        School   @relation(fields: [schoolId], references: [id])
+  schoolId      String
+
+  name          String   // 2025-2026
+  startDate     DateTime
+  endDate       DateTime
+
+  isCurrent     Boolean  @default(false)
+
+  terms         Term[]
+}
+
+model Term {
+  id            String   @id @default(uuid())
+  year          AcademicYear @relation(fields: [yearId], references: [id])
+  yearId        String
+
+  name          String   // First Term, Second Term, Third Term
+  startDate     DateTime
+  endDate       DateTime
+
+  isCurrent     Boolean  @default(false)
+}
+
+model Student {
+  id            String   @id @default(uuid())
+
+  // Personal
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  gender        Gender
+
+  // School
+  studentId     String   @unique // LFT-SCH-XXXX
+  section       Section  @relation(fields: [sectionId], references: [id])
+  sectionId     String
+
+  // Parents/Guardians
+  parentName    String
+  parentPhone   String
+  parentEmail   String?
+
+  // Fees
+  feePayments   FeePayment[]
+
+  // Academic
+  enrollments   Enrollment[]
+
+  // Status
+  status        StudentStatus @default(ACTIVE)
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([status, deletedAt])
+  @@index([sectionId, deletedAt])
+  @@index([deletedAt])
+}
+
+model FeePayment {
+  id            String   @id @default(uuid())
+  student       Student  @relation(fields: [studentId], references: [id])
+  studentId     String
+
+  term          Term     @relation(fields: [termId], references: [id])
+  termId        String
+
+  feeType       FeeType
+  amount        Decimal  @db.Decimal(10, 2)
+  amountPaid    Decimal  @default(0) @db.Decimal(10, 2)
+  balance       Decimal  @db.Decimal(10, 2)
+
+  payments      Payment[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([studentId, deletedAt])
+  @@index([termId, deletedAt])
+  @@index([deletedAt])
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  feePayment    FeePayment @relation(fields: [feePaymentId], references: [id])
+  feePaymentId  String
+
+  amount        Decimal  @db.Decimal(10, 2)
+  method        String   // CASH, MTN, ORANGE, BANK
+
+  paidAt        DateTime @default(now())
+  receivedBy    String
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([feePaymentId, deletedAt])
+  @@index([method, deletedAt])
+  @@index([deletedAt])
+}
+
+model Enrollment {
+  id            String   @id @default(uuid())
+  student       Student  @relation(fields: [studentId], references: [id])
+  studentId     String
+
+  term          Term     @relation(fields: [termId], references: [id])
+  termId        String
+
+  // Grades
+  subjects      SubjectGrade[]
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([studentId, deletedAt])
+  @@index([termId, deletedAt])
+  @@index([deletedAt])
+}
+
+model SubjectGrade {
+  id            String   @id @default(uuid())
+  enrollment    Enrollment @relation(fields: [enrollmentId], references: [id])
+  enrollmentId  String
+
+  subject       String
+
+  // Continuous Assessment
+  ca1           Decimal? @db.Decimal(4, 2) // /20
+  ca2           Decimal? @db.Decimal(4, 2) // /20
+
+  // Exam
+  exam          Decimal? @db.Decimal(4, 2) // /20
+
+  // Total
+  total         Decimal? @db.Decimal(4, 2) // /60 or /100
+
+  // Grade
+  letterGrade   String?  // A, B, C, etc.
+  remarks       String?
+
+  // Soft delete
+  deletedAt     DateTime?
+
+  @@index([enrollmentId, deletedAt])
+  @@index([deletedAt])
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum OrgType {
+  CHURCH
+  SCHOOL
+  HOSPITAL
+  MINISTRY
+  BRANCH
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PASTOR
+  FINANCE_ADMIN
+  HR_ADMIN
+  EDITOR
+  PRAYER_TEAM
+  SMALL_GROUP_LEADER
+  DEPARTMENT_LEADER
+  VOLUNTEER_COORDINATOR
+  MEMBER
+  VISITOR
+  // School roles
+  SCHOOL_ADMIN
+  TEACHER
+  PARENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum FamilyRole {
+  HEAD
+  SPOUSE
+  CHILD
+  OTHER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  TRANSFERRED
+  DECEASED
+}
+
+enum ContactMethod {
+  EMAIL
+  SMS
+  WHATSAPP
+  PHONE
+}
+
+enum ServiceType {
+  SUNDAY_CELEBRATION
+  WEDNESDAY_PRAYER
+  SPECIAL_SERVICE
+  CONFERENCE
+}
+
+enum ServiceItemType {
+  WORSHIP
+  PRAYER
+  ANNOUNCEMENT
+  SERMON
+  OFFERING
+  COMMUNION
+  BAPTISM
+  SPECIAL
+}
+
+enum TeamType {
+  WORSHIP_TEAM
+  SOUND_TEAM
+  USHER_TEAM
+  PROTOCOL_TEAM
+  MEDIA_TEAM
+  SECURITY_TEAM
+  CLEANING_TEAM
+}
+
+enum DonationType {
+  TITHE
+  OFFERING
+  PROJECT
+  MISSIONS
+  BUILDING_FUND
+  CHARITY
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum EventType {
+  SERVICE
+  CONFERENCE
+  RETREAT
+  TRAINING
+  SOCIAL
+  OUTREACH
+  FUNDRAISER
+  WEDDING
+  FUNERAL
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+}
+
+enum PrayerCategory {
+  HEALTH
+  FINANCIAL
+  FAMILY
+  RELATIONSHIP
+  CAREER
+  SPIRITUAL
+  GENERAL
+}
+
+enum PrayerStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  ANSWERED
+  CLOSED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  VOLUNTEER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  BEREAVEMENT
+  STUDY
+  UNPAID
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+  OFF_BALANCE
+}
+
+enum TransactionSource {
+  MANUAL
+  GIVING
+  PAYROLL
+  INVENTORY
+  PROCUREMENT
+  BANK_IMPORT
+}
+
+enum MovementType {
+  RECEIPT
+  ISSUE
+  TRANSFER
+  ADJUSTMENT
+  RETURN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum AssetCategory {
+  VEHICLE
+  EQUIPMENT
+  FURNITURE
+  ELECTRONICS
+  INSTRUMENT
+  BUILDING
+  LAND
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  UNDER_MAINTENANCE
+  RETIRED
+  DISPOSED
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+  INSPECTION
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum StudentStatus {
+  ACTIVE
+  GRADUATED
+  TRANSFERRED
+  WITHDRAWN
+  SUSPENDED
+}
+
+enum FeeType {
+  TUITION
+  REGISTRATION
+  EXAMINATION
+  LIBRARY
+  SPORTS
+  TRANSPORT
+  LUNCH
+  UNIFORM
+  BOOKS
+  OTHER
+}

@@ -1,0 +1,118 @@
+{
+  "name": "Living Faith Tabernacle",
+  "short_name": "LFTCM",
+  "description": "Living Faith Tabernacle Cameroon - Church Operating System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["lifestyle", "spirituality", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "/screenshots/sermons.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Sermons List"
+    },
+    {
+      "src": "/screenshots/giving.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Online Giving"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Sermons",
+      "short_name": "Sermons",
+      "description": "Listen to recent sermons",
+      "url": "/sermons",
+      "icons": [{ "src": "/icons/sermons.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Give",
+      "short_name": "Give",
+      "description": "Make a donation",
+      "url": "/giving",
+      "icons": [{ "src": "/icons/giving.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "description": "View upcoming events",
+      "url": "/events",
+      "icons": [{ "src": "/icons/events.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Prayer",
+      "short_name": "Prayer",
+      "description": "Submit prayer requests",
+      "url": "/prayer",
+      "icons": [{ "src": "/icons/prayer.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

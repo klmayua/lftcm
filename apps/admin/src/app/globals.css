@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold-50: #FDF9E8;
+  --gold-100: #F9F0C4;
+  --gold-200: #F5E79A;
+  --gold-300: #F0DD6F;
+  --gold-400: #EBD34A;
+  --gold-500: #D4AF37;
+  --gold-600: #B8962E;
+  --gold-700: #9C7D25;
+  --gold-800: #80641C;
+  --gold-900: #644B13;
+  --authority-black: #0A0A0A;
+  --holy-green: #0B6623;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply antialiased bg-gray-50;
+  }
+}
+
+@layer components {
+  .admin-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+
+  .admin-btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply bg-gold-500 text-white hover:bg-gold-600;
+  }
+
+  .admin-btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+  }
+
+  .admin-input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500;
+  }
+
+  .admin-table {
+    @apply w-full text-left border-collapse;
+  }
+
+  .admin-table th {
+    @apply px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3 border-t border-gray-100;
+  }
+
+  .admin-table tr:hover td {
+    @apply bg-gray-50;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg;
+    @apply hover:bg-gray-100 hover:text-gray-900 transition-colors;
+  }
+
+  .sidebar-link.active {
+    @apply bg-gold-50 text-gold-700;
+  }
+}

@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Gold Scale */
+  --gold-50: #FDF9E8;
+  --gold-100: #F9F0C4;
+  --gold-200: #F5E79A;
+  --gold-300: #F0DD6F;
+  --gold-400: #EBD34A;
+  --gold-500: #D4AF37;
+  --gold-600: #B8962E;
+  --gold-700: #9C7D25;
+  --gold-800: #80641C;
+  --gold-900: #644B13;
+
+  /* Foundation */
+  --holy-green: #0B6623;
+  --authority-black: #0A0A0A;
+  --pure-white: #FFFFFF;
+
+  /* Fire */
+  --cross-red: #8B0000;
+  --flame-orange: #FF8C00;
+  --flame-yellow: #FFD700;
+
+  /* Backgrounds */
+  --bg-main: #FFFFFF;
+  --bg-alt: #F9F6EF;
+  --bg-dark: #0A0A0A;
+
+  /* Text */
+  --text-primary: #0A0A0A;
+  --text-secondary: #444444;
+  --text-muted: #666666;
+  --text-inverse: #FFFFFF;
+
+  /* Mobile */
+  --bottom-nav-height: 64px;
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  html {
+    @apply scroll-smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply font-body text-text-primary antialiased;
+    @apply bg-bg-main;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading font-bold text-authority-black;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl leading-tight;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl leading-tight;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl leading-snug;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl;
+  }
+}
+
+@layer components {
+  /* Divine Gold Button */
+  .btn-gold {
+    @apply inline-flex items-center justify-center px-6 py-3;
+    @apply bg-gradient-to-r from-gold-300 via-gold-500 to-gold-700;
+    @apply text-authority-black font-semibold;
+    @apply rounded-xl shadow-gold;
+    @apply transition-all duration-300;
+    @apply hover:brightness-110 hover:shadow-lg;
+    @apply active:scale-95;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3;
+    @apply bg-transparent border-2 border-gold-500 text-gold-600;
+    @apply font-semibold rounded-xl;
+    @apply transition-all duration-300;
+    @apply hover:bg-gold-500 hover:text-authority-black;
+    @apply active:scale-95;
+  }
+
+  /* Dark Section Button */
+  .btn-dark {
+    @apply inline-flex items-center justify-center px-6 py-3;
+    @apply bg-gold-500 text-authority-black;
+    @apply font-semibold rounded-xl;
+    @apply transition-all duration-300;
+    @apply hover:bg-gold-400;
+    @apply active:scale-95;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-white rounded-2xl shadow-card;
+    @apply border border-gray-100;
+    @apply transition-shadow duration-300;
+    @apply hover:shadow-elevated;
+  }
+
+  .card-dark {
+    @apply bg-authority-black rounded-2xl;
+    @apply border border-gold-500/30;
+  }
+
+  .card-gold {
+    @apply bg-gradient-to-br from-gold-300 via-gold-500 to-gold-700;
+    @apply rounded-2xl text-authority-black;
+  }
+
+  /* Section Styles */
+  .section-padding {
+    @apply py-10 md:py-16 lg:py-20;
+  }
+
+  .section-alt {
+    @apply bg-temple;
+  }
+
+  .section-dark {
+    @apply bg-authority-black text-white;
+  }
+
+  /* Mobile Touch Targets */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Scripture Text */
+  .scripture {
+    @apply font-accent italic text-gold-600;
+    @apply text-lg leading-relaxed;
+  }
+
+  /* Banner Text */
+  .banner-text {
+    @apply font-accent text-xs font-semibold tracking-widest uppercase;
+    @apply text-gold-500;
+  }
+
+  /* Form Inputs */
+  .input {
+    @apply w-full px-4 py-3 rounded-xl;
+    @apply bg-white border border-gray-200;
+    @apply text-text-primary placeholder:text-text-muted;
+    @apply focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500;
+    @apply transition-all duration-200;
+  }
+
+  .input-dark {
+    @apply bg-gray-900 border-gray-700 text-white;
+    @apply placeholder:text-gray-500;
+    @apply focus:ring-gold-500/30 focus:border-gold-500;
+  }
+
+  /* Altar Glow Effect */
+  .altar-glow {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, rgba(255, 255, 255, 0) 70%);
+  }
+
+  /* Fire Gradient Text */
+  .text-fire {
+    @apply bg-gradient-to-r from-flame-yellow via-flame-orange to-cross-red;
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Gold Gradient Text */
+  .text-gold-gradient {
+    @apply bg-gradient-to-r from-gold-300 via-gold-500 to-gold-700;
+    @apply bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  /* Safe area padding for mobile */
+  .pb-safe {
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-inset-bottom));
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  .mobile-full {
+    @apply w-screen -mx-4 px-4;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
