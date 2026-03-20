@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock, MapPin, Phone } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, MapPin, Phone, ChevronRight, Users } from 'lucide-react';
 
 const services = [
   {
@@ -11,6 +12,7 @@ const services = [
     duration: '2 hours',
     description: 'Main worship service with praise, prayer, and powerful teaching.',
     icon: Clock,
+    highlight: true,
   },
   {
     day: 'Wednesday',
@@ -19,6 +21,7 @@ const services = [
     duration: '1.5 hours',
     description: 'Midweek prayer meeting with Holy Communion.',
     icon: Clock,
+    highlight: false,
   },
   {
     day: 'Friday',
@@ -27,6 +30,7 @@ const services = [
     duration: 'All night',
     description: 'Monthly all-night prayer meeting (First Friday of each month).',
     icon: Clock,
+    highlight: false,
   },
 ];
 
@@ -35,7 +39,7 @@ export function Services() {
     <section className="section-padding bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-8 md:mb-12">
           <motion.span
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -50,7 +54,7 @@ export function Services() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="mt-4 mb-4"
+            className="mt-3 mb-3 md:mb-4"
           >
             Service Times
           </motion.h2>
@@ -60,15 +64,15 @@ export function Services() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-text-secondary max-w-2xl mx-auto"
+            className="text-sm md:text-base text-text-secondary max-w-2xl mx-auto"
           >
             We gather throughout the week to worship, pray, and grow together.
             All are welcome to join us.
           </motion.p>
         </div>
 
-        {/* Service Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* Service Cards - Mobile: Horizontal Scroll, Desktop: Grid */}
+        <div className="scroll-x md:grid md:grid-cols-3 gap-4 pb-2">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
@@ -78,85 +82,92 @@ export function Services() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className={`card p-8 ${
-                  index === 0 ? 'border-gold-500 border-2' : ''
+                className={`w-[280px] md:w-auto shrink-0 card p-5 md:p-6 lg:p-8 ${
+                  service.highlight ? 'border-gold-500 border-2 ring-2 ring-gold-100' : ''
                 }`}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    index === 0
+                <div className="flex items-center gap-3 mb-3 md:mb-4">
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${
+                    service.highlight
                       ? 'bg-gradient-to-r from-gold-400 to-gold-600'
                       : 'bg-gold-100'
                   }`}>
-                    <Icon className={`w-6 h-6 ${
-                      index === 0 ? 'text-white' : 'text-gold-600'
+                    <Icon className={`w-5 h-5 md:w-6 md:h-6 ${
+                      service.highlight ? 'text-white' : 'text-gold-600'
                     }`} />
                   </div>
-                  <span className="text-sm font-semibold text-gold-600 uppercase tracking-wider">
+                  <span className="text-xs md:text-sm font-semibold text-gold-600 uppercase tracking-wider">
                     {service.day}
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-heading font-bold text-authority-black mb-2">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-heading font-bold text-authority-black mb-2">
                   {service.name}
                 </h3>
 
-                <div className="flex items-center gap-2 text-gold-600 font-semibold text-lg mb-3">
-                  <Clock className="w-5 h-5" />
+                <div className="flex items-center gap-2 text-gold-600 font-semibold text-base md:text-lg mb-2">
+                  <Clock className="w-4 h-4 md:w-5 md:h-5" />
                   {service.time}
                 </div>
 
-                <p className="text-text-secondary mb-4">
+                <p className="text-sm md:text-base text-text-secondary mb-3">
                   {service.description}
                 </p>
 
-                <div className="text-sm text-text-muted">
-                  Duration: {service.duration}
-                </div>
+                {service.highlight && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <Users className="w-4 h-4 text-gold-500" />
+                    <span className="text-xs md:text-sm text-gold-600 font-medium">Main Service</span>
+                  </div>
+                )}
               </motion.div>
             );
           })}
         </div>
 
-        {/* Location Info */}
+        {/* Location Info - Mobile Optimized */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}
-          className="mt-12 card p-6 md:p-8"
+          className="mt-8 md:mt-12 card p-4 md:p-6 lg:p-8"
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gold-100 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-gold-600" />
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
+            <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gold-100 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 md:w-6 md:h-6 text-gold-600" />
               </div>
-              <div>
-                <span className="block text-sm text-text-muted">Main Location</span>
-                <span className="block font-semibold text-authority-black">
+              <div className="min-w-0">
+                <span className="block text-xs md:text-sm text-text-muted">Main Location</span>
+                <span className="block text-sm md:text-base font-semibold text-authority-black truncate">
                   Yaoundé, Cameroon
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gold-100 flex items-center justify-center">
-                <Phone className="w-6 h-6 text-gold-600" />
+            <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gold-100 flex items-center justify-center flex-shrink-0">
+                <Phone className="w-5 h-5 md:w-6 md:h-6 text-gold-600" />
               </div>
-              <div>
-                <span className="block text-sm text-text-muted">Contact</span>
-                <span className="block font-semibold text-authority-black">
+              <div className="min-w-0">
+                <span className="block text-xs md:text-sm text-text-muted">Contact</span>
+                <a
+                  href="tel:+237XXXXXXXXX"
+                  className="block text-sm md:text-base font-semibold text-authority-black hover:text-gold-600 transition-colors"
+                >
                   +237 XXX XXX XXX
-                </span>
+                </a>
               </div>
             </div>
 
-            <a
+            <Link
               href="/branches"
-              className="btn-secondary"
+              className="btn-secondary w-full md:w-auto justify-center text-sm md:text-base"
             >
               View All Branches
-            </a>
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
           </div>
         </motion.div>
       </div>

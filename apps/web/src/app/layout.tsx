@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: '%s | LFTCM',
   },
   description: 'Winning the world with the Word of faith. Join us for powerful worship and transformative teaching.',
-  keywords: ['church', 'faith', 'Cameroon', 'Yaoundé', 'Christian', 'worship', 'prayer'],
+  keywords: ['church', 'faith', 'Cameroon', 'Yaoundé', 'Christian', 'worship', 'prayer', 'LFTCM'],
   authors: [{ name: 'Living Faith Tabernacle' }],
   manifest: '/manifest.json',
   icons: {
@@ -58,6 +58,16 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'LFTCM',
+    startupImage: [
+      '/icons/apple-splash-2048-2732.jpg',
+      '/icons/apple-splash-1668-2388.jpg',
+      '/icons/apple-splash-1536-2048.jpg',
+    ],
+  },
+  formatDetection: {
+    telephone: true,
+    date: true,
+    address: true,
   },
 };
 
@@ -65,6 +75,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  minimumScale: 1,
+  userScalable: true,
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
     { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
@@ -77,16 +90,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth antialiased">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/* Mobile-specific meta tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=yes" />
+        <meta name="msapplication-tap-highlight" content="no" />
+
+        {/* PWA manifest for Android/Chrome */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Theme color for browsers */}
+        <meta name="theme-color" content="#D4AF37" />
       </head>
-      <body className="min-h-screen bg-white antialiased">
+      <body className="min-h-screen bg-white antialiased overflow-x-hidden">
         <SkipNavigation />
         <QueryProvider>
           <LanguageProvider>
-            <main id="main-content" tabIndex={-1}>
+            <main id="main-content" tabIndex={-1} className="min-h-screen">
               {children}
             </main>
             <ServiceWorkerRegistration />
